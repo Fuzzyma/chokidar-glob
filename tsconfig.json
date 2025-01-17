@@ -1,0 +1,14 @@
+{
+  "extends": "@paulmillr/jsbt/tsconfig.cjs.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "outDir": ".",
+    "noImplicitReturns": false,
+    "sourceMap": false,
+    "declarationMap": false,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
+  },
+  "include": ["src"],
+  "exclude": ["node_modules"]
+}
