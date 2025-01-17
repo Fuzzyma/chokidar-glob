@@ -16,7 +16,6 @@ import { EVENTS as EV, isIBMi, isMacos, isWindows } from 'chokidar/handler.js';
 
 import { URL } from 'url'; // in Browser, the URL in native accessible on window
 import { FSWatcher } from 'chokidar';
-import globParent from 'glob-parent';
 
 const __filename = fileURLToPath(new URL('', import.meta.url));
 // Will contain trailing slash

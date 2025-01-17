@@ -8,7 +8,6 @@ import {
   MatchFunction,
 } from 'chokidar';
 import { EVENTS } from 'chokidar/handler.js';
-import isGlob from 'is-glob';
 import picomatch from 'picomatch';
 
 export interface ChokidarGlobOptions extends ChokidarOptions {
@@ -24,7 +23,8 @@ function handleWatchGlobs(
   { cwd }: ChokidarOptions = {}
 ): [string[], MatchFunction | null] {
   // Make sure watchPath is an array
-  const watchPaths = Array.isArray(_watchPaths) ? _watchPaths : [_watchPaths];
+  // Chokidar actually also allows string[][] and not only string[]
+  const watchPaths = (Array.isArray(_watchPaths) ? _watchPaths : [_watchPaths]).flat();
 
   const globPaths: string[] = [];
   const globParents: string[] = [];
@@ -34,9 +34,8 @@ function handleWatchGlobs(
   // Get all glob and non glob paths
   for (let i = 0; i < watchPaths.length; i++) {
     const p = watchPaths[i];
-    if (isGlob(watchPaths[i])) {
-      const scan = picomatch.scan(p);
-
+    const scan = picomatch.scan(p);
+    if (scan.isGlob) {
       if (scan.negated) {
         negatedGlobs.push(p.slice(scan.start));
         continue;
@@ -74,7 +73,9 @@ function handleIgnoreGlobs({ ignored, cwd }: ChokidarOptions): Matcher[] {
   const matchers = Array.isArray(ignored) ? ignored : ignored != null ? [ignored] : [];
 
   // Get all globs from the ignored array
-  const ignoredGlobs = matchers.filter((s): s is string => typeof s === 'string' && isGlob(s));
+  const ignoredGlobs = matchers.filter(
+    (s): s is string => typeof s === 'string' && picomatch.scan(s).isGlob
+  );
 
   if (ignoredGlobs.length === 0) {
     return matchers;
@@ -84,8 +85,10 @@ function handleIgnoreGlobs({ ignored, cwd }: ChokidarOptions): Matcher[] {
 
   matchers.push(matcher);
 
+  console.log(matchers);
+
   // Make sure to filter out all glob paths. We handled them through picomatch
-  return matchers.filter((s) => typeof s !== 'string' || !isGlob(s));
+  return matchers.filter((s) => typeof s !== 'string' || !picomatch.scan(s).isGlob);
 }
 
 export function watch(watchPath: string | string[], watchOptions: ChokidarGlobOptions = {}) {
