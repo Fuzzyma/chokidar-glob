@@ -1,5 +1,4 @@
 // Tests taken from chokidar 3.6.0 (https://github.com/paulmillr/chokidar/blob/3.6.0/test.js)
-import fs from 'node:fs'; // fs.stat is mocked below, so can't import INDIVIDUAL methods
 import * as fsp from 'node:fs/promises';
 import { writeFile as write, readFile as read, rm } from 'node:fs/promises';
 import sysPath from 'node:path';
@@ -30,12 +29,11 @@ const initialPath = process.cwd();
 const testfolder = 'chokidar-' + Date.now();
 const tempDir = tmpdir();
 const FIXTURES_PATH = sysPath.join(tempDir, testfolder);
-const FIXTURES_PATH_REL = testfolder;
 
 const WATCHERS: FSWatcher[] = [];
 const PERM = 0o755; // rwe, r+e, r+e
 let testId = 0;
-let currentDir;
+let currentDir: string;
 let slowerDelay;
 
 // spyOnReady
@@ -90,8 +88,11 @@ const gpath = (subPath: string) => {
 };
 currentDir = dpath('');
 
-const cwatch = (path = currentDir, opts: ChokidarGlobOptions = {}) => {
-  const wt = chokidar.watch(path, opts);
+const cwatch = (
+  path: string | string[] | string[][] = currentDir,
+  opts: ChokidarGlobOptions = {}
+) => {
+  const wt = chokidar.watch(path as unknown as string, opts);
   WATCHERS.push(wt);
   return wt;
 };
@@ -223,8 +224,8 @@ const runTests = (baseopts: { usePolling: boolean; persistent?: boolean; interva
       await Promise.all([
         write(addFile, dateNow()),
         write(subFile, dateNow()),
-        await fsp.unlink(aFile),
-        await fsp.unlink(bFile),
+        fsp.unlink(aFile),
+        fsp.unlink(bFile),
       ]);
 
       await waitFor([spy.withArgs(EV.CHANGE)]);
