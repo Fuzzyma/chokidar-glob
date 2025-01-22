@@ -72,23 +72,29 @@ function handleIgnoreGlobs({ ignored, cwd }: ChokidarOptions): Matcher[] {
   // Make sure we always have an array
   const matchers = Array.isArray(ignored) ? ignored : ignored != null ? [ignored] : [];
 
-  // Get all globs from the ignored array
-  const ignoredGlobs = matchers.filter(
-    (s): s is string => typeof s === 'string' && picomatch.scan(s).isGlob
-  );
+  const nonGlobMatchers = [];
+  const ignoredGlobs = [];
+
+  for (let i = 0; i < matchers.length; i++) {
+    const s = matchers[i];
+
+    if (typeof s !== 'string' || !picomatch.scan(s).isGlob) {
+      nonGlobMatchers.push(s);
+      continue;
+    }
+
+    ignoredGlobs.push(s);
+  }
 
   if (ignoredGlobs.length === 0) {
     return matchers;
   }
 
+  // Create a matcher function that matches all our collected globs
   const matcher = picomatch(ignoredGlobs, { cwd, dot: true });
+  nonGlobMatchers.push(matcher);
 
-  matchers.push(matcher);
-
-  console.log(matchers);
-
-  // Make sure to filter out all glob paths. We handled them through picomatch
-  return matchers.filter((s) => typeof s !== 'string' || !picomatch.scan(s).isGlob);
+  return nonGlobMatchers;
 }
 
 export function watch(watchPath: string | string[], watchOptions: ChokidarGlobOptions = {}) {
