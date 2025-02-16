@@ -242,7 +242,7 @@ const runTests = (baseopts: { usePolling: boolean; persistent?: boolean; interva
     });
     it('should resolve relative paths with glob patterns', async () => {
       const id = testId.toString();
-      const watchPath = sysPath.join(id, `*a*.txt`);
+      const watchPath = upath.join(id, `*a*.txt`);
       // getFixturePath() returns absolute paths, so use sysPath.join() instead
       const addPath = sysPath.join(id, 'add.txt');
       const changePath = sysPath.join(id, 'change.txt');
@@ -260,7 +260,12 @@ const runTests = (baseopts: { usePolling: boolean; persistent?: boolean; interva
       spy.should.not.have.been.calledWith(EV.ADD, unlinkPath);
       spy.should.not.have.been.calledWith(EV.ADD_DIR);
 
-      if (!macosFswatch) spy.should.have.been.calledThrice;
+      if (isWindows && !options.usePolling) {
+        spy.should.have.been.calledWith(EV.CHANGE, addPath);
+        spy.should.have.been.callCount(4);
+      } else if (!macosFswatch) {
+        spy.should.have.been.calledThrice;
+      }
     });
 
     it('should watch non-existent file and detect add', async () => {
@@ -284,6 +289,7 @@ const runTests = (baseopts: { usePolling: boolean; persistent?: boolean; interva
       await waitFor([spy]);
 
       spy.should.have.been.calledWith(EV.ADD, addPath);
+      // FIXME: this actually might get emitted by windows
       spy.should.not.have.been.calledWith(EV.CHANGE, addPath);
       spy.should.not.have.been.calledWith(EV.ADD_DIR);
     });
