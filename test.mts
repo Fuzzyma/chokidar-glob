@@ -1,4 +1,4 @@
-// Tests taken from chokidar 3.6.0 (https://github.com/paulmillr/chokidar/blob/3.6.0/test.js)
+// Tests mostly taken from chokidar 3.6.0 (https://github.com/paulmillr/chokidar/blob/3.6.0/test.js)
 import * as fsp from 'node:fs/promises';
 import { writeFile as write, readFile as read, rm } from 'node:fs/promises';
 import sysPath from 'node:path';
@@ -6,7 +6,7 @@ import { describe, it, beforeEach, afterEach } from 'micro-should';
 import { fileURLToPath, URL } from 'node:url';
 import { tmpdir } from 'node:os';
 import * as chai from 'chai';
-import sinon from 'sinon';
+import sinon, { SinonSpy } from 'sinon';
 import sinonChai from 'sinon-chai';
 import upath from 'upath';
 
@@ -14,9 +14,8 @@ import chokidar, { type ChokidarGlobOptions } from './esm/index.js';
 import type { FSWatcher } from 'chokidar';
 
 import { EVENTS as EV, isIBMi, isMacos, isWindows } from 'chokidar/handler.js';
-// import chokidar, { ChokidarOptions, FSWatcher } from 'chokidar';
 
-const TEST_TIMEOUT = 32000; // ms
+const TEST_TIMEOUT = 5000; // ms
 
 const { expect } = chai;
 chai.use(sinonChai);
@@ -97,15 +96,15 @@ const cwatch = (
   return wt;
 };
 
-const waitFor = (spies) => {
+const waitFor = (spies: ([SinonSpy<any[], any>, number] | SinonSpy<any[], any>)[]) => {
   if (spies.length === 0) throw new Error('need at least 1 spy');
   return new Promise<void>((resolve, reject) => {
-    let checkTimer;
+    let checkTimer: NodeJS.Timeout;
     const timeout = setTimeout(() => {
       clearTimeout(checkTimer);
       reject(new Error('timeout waitFor, passed ms: ' + TEST_TIMEOUT));
     }, TEST_TIMEOUT);
-    const isSpyReady = (spy) => {
+    const isSpyReady = (spy: SinonSpy<any[], any> | [SinonSpy<any[], any>, number]) => {
       if (Array.isArray(spy)) {
         return spy[0].callCount >= spy[1];
       }
@@ -215,7 +214,8 @@ const runTests = (baseopts: { usePolling: boolean; persistent?: boolean; interva
       await fsp.writeFile(bFile, 'b');
       await fsp.writeFile(subFile, 'b');
 
-      // await delay();
+      // Linux fails sometimes without
+      await delay();
       const watcher = cwatch(watchPath, options);
       const spy = await aspy(watcher, EV.ALL);
 
@@ -280,6 +280,7 @@ const runTests = (baseopts: { usePolling: boolean; persistent?: boolean; interva
       const watcher = cwatch(testPath, options);
       const spy = await aspy(watcher, EV.ADD);
 
+      // never resolves waitFor on windows without delay
       await delay();
       await write(testPath, dateNow());
       await waitFor([spy]);
@@ -291,6 +292,7 @@ const runTests = (baseopts: { usePolling: boolean; persistent?: boolean; interva
       const watcher = cwatch(addPath, options);
       const spy = await aspy(watcher, EV.ALL);
 
+      // never resolves waitFor on windows without delay
       await delay();
       await write(addPath, dateNow());
       await waitFor([spy]);
@@ -432,7 +434,7 @@ const runTests = (baseopts: { usePolling: boolean; persistent?: boolean; interva
       spy.withArgs(EV.ADD_DIR).should.have.been.calledOnce;
 
       // This delay is needed. Otherwise the polling test will be flaky
-      // await delay();
+      await delay();
       await fsp.mkdir(deepDir, PERM);
       await fsp.writeFile(deepFile, dateNow());
 
