@@ -542,10 +542,12 @@ async function main() {
 
   await it.run(true);
 
+  process.chdir(initialPath);
+
   try {
     await rm(FIXTURES_PATH, { recursive: true, force: true });
-    // eslint-disable-next-line no-unused-vars
-  } catch (error) {}
-  process.chdir(initialPath);
+  } catch (error) {
+    console.log(error);
+  }
 }
 main();
