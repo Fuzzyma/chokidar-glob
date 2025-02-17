@@ -313,7 +313,8 @@ const runTests = (baseopts: { usePolling: boolean; persistent?: boolean; interva
       spy.should.have.been.calledWith(EV.ADD, unlinkPath);
       spy.should.have.been.calledTwice;
 
-      // await delay();
+      // macos seems to be flaky without
+      await delay();
       await fsp.unlink(unlinkPath);
       await write(addPath, dateNow());
       await write(changePath, dateNow());
