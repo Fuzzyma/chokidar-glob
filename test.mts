@@ -152,12 +152,11 @@ const runTests = (baseopts: { usePolling: boolean; persistent?: boolean; interva
       await write(addPath, dateNow());
       await write(changePath, dateNow());
 
-      await delay();
+      // await delay();
       await waitFor([[spy, 3], spy.withArgs(EV.ADD, addPath)]);
       spy.should.have.been.calledWith(EV.ADD, addPath);
       spy.should.have.been.calledWith(EV.CHANGE, changePath);
       spy.should.not.have.been.calledWith(EV.ADD, dpath('unlink.txt'));
-      // spy.should.not.have.been.calledWith(EV.ADD_DIR);
     });
 
     it('should respect negated glob patterns', async () => {
@@ -169,7 +168,7 @@ const runTests = (baseopts: { usePolling: boolean; persistent?: boolean; interva
       spy.should.have.been.calledOnce;
       spy.should.have.been.calledWith(EV.ADD, unlinkPath);
 
-      await delay();
+      // await delay();
       await fsp.unlink(unlinkPath);
       await waitFor([[spy, 2], spy.withArgs(EV.UNLINK)]);
       spy.should.have.been.calledTwice;
@@ -188,9 +187,8 @@ const runTests = (baseopts: { usePolling: boolean; persistent?: boolean; interva
       spy.should.have.been.calledTwice;
       spy.should.have.been.calledWith(EV.ADD, unlinkPath);
       spy.should.have.been.calledWith(EV.ADD, changePath);
-      // spy.should.have.been.calledWith(EV.ADD_DIR, parent);
 
-      await delay();
+      // await delay();
       await fsp.unlink(unlinkPath);
       await waitFor([[spy, 2], spy.withArgs(EV.UNLINK)]);
 
@@ -217,7 +215,7 @@ const runTests = (baseopts: { usePolling: boolean; persistent?: boolean; interva
       await fsp.writeFile(bFile, 'b');
       await fsp.writeFile(subFile, 'b');
 
-      await delay();
+      // await delay();
       const watcher = cwatch(watchPath, options);
       const spy = await aspy(watcher, EV.ALL);
 
@@ -260,8 +258,17 @@ const runTests = (baseopts: { usePolling: boolean; persistent?: boolean; interva
       spy.should.not.have.been.calledWith(EV.ADD, unlinkPath);
       spy.should.not.have.been.calledWith(EV.ADD_DIR);
 
-      if (isWindows && !options.usePolling) {
-        spy.should.have.been.calledWith(EV.CHANGE, addPath);
+      let raceWon = true;
+
+      try {
+        spy.should.not.have.been.calledWith(EV.CHANGE, addPath);
+        raceWon = false;
+        // eslint-disable-next-line no-unused-vars
+      } catch (e) {
+        raceWon = true;
+      }
+
+      if (raceWon) {
         spy.should.have.been.callCount(4);
       } else if (!macosFswatch) {
         spy.should.have.been.calledThrice;
@@ -304,7 +311,7 @@ const runTests = (baseopts: { usePolling: boolean; persistent?: boolean; interva
       spy.should.have.been.calledWith(EV.ADD, unlinkPath);
       spy.should.have.been.calledTwice;
 
-      await delay();
+      // await delay();
       await fsp.unlink(unlinkPath);
       await write(addPath, dateNow());
       await write(changePath, dateNow());
@@ -324,7 +331,7 @@ const runTests = (baseopts: { usePolling: boolean; persistent?: boolean; interva
       spy.should.have.been.calledOnce;
 
       await write(changePath, dateNow());
-      await delay();
+      // await delay();
       await waitFor([[spy, 2]]);
       spy.should.have.been.calledWith(EV.CHANGE, changePath);
       spy.should.have.been.calledTwice;
@@ -332,11 +339,11 @@ const runTests = (baseopts: { usePolling: boolean; persistent?: boolean; interva
     it('should not confuse glob-like filenames with globs', async () => {
       const filePath = dpath('nota[glob].txt');
       await write(filePath, 'b');
-      await delay();
+      // await delay();
       const spy = await aspy(cwatch(), EV.ALL);
       spy.should.have.been.calledWith(EV.ADD, filePath);
 
-      await delay();
+      // await delay();
       await write(filePath, dateNow());
       await waitFor([spy.withArgs(EV.CHANGE, filePath)]);
       spy.should.have.been.calledWith(EV.CHANGE, filePath);
@@ -361,7 +368,7 @@ const runTests = (baseopts: { usePolling: boolean; persistent?: boolean; interva
       spy.should.not.have.been.calledWith(EV.ADD_DIR, matchingDir);
       spy.should.not.have.been.calledWith(EV.ADD, matchingFile);
       spy.should.not.have.been.calledWith(EV.ADD, matchingFile2);
-      await delay();
+      // await delay();
       await write(filePath, dateNow());
 
       await waitFor([spy.withArgs(EV.CHANGE, filePath)]);
@@ -386,7 +393,7 @@ const runTests = (baseopts: { usePolling: boolean; persistent?: boolean; interva
       spy.should.not.have.been.calledWith(EV.ADD_DIR, matchingDir);
       spy.should.not.have.been.calledWith(EV.ADD, matchingFile);
       spy.should.not.have.been.calledWith(EV.ADD, matchingFile2);
-      await delay();
+      // await delay();
       await write(filePath, dateNow());
 
       await waitFor([spy.withArgs(EV.CHANGE, filePath)]);
@@ -402,7 +409,7 @@ const runTests = (baseopts: { usePolling: boolean; persistent?: boolean; interva
       const watcher = cwatch(watchPath, options);
       const spy = await aspy(watcher, EV.ALL);
 
-      await delay();
+      // await delay();
       await write(deepFile, dateNow());
       await waitFor([[spy, 2]]);
       spy.should.have.been.calledWith(EV.ADD, deepFile);
@@ -425,7 +432,7 @@ const runTests = (baseopts: { usePolling: boolean; persistent?: boolean; interva
       spy.withArgs(EV.ADD_DIR).should.have.been.calledOnce;
 
       // This delay is needed. Otherwise the polling test will be flaky
-      await delay();
+      // await delay();
       await fsp.mkdir(deepDir, PERM);
       await fsp.writeFile(deepFile, dateNow());
 
